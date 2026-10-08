@@ -1,4 +1,32 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Kararsızım — Proje Planı ve Claude Code Yönergesi
+
+## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
+
+**Durum:** Faz 0 kodu tamam (iskelet, custom User, settings). Supabase'e migrate + RLS + `createsuperuser` adımları kullanıcı `.env`'e bağlantı bilgilerini girince yapılacak. Faz 1 henüz başlamadı. `/` şimdilik `templates/home.html` placeholder'ı (Faz 2'de `poll_list` ile değişecek).
+
+**Komutlar** (Windows; venv Python 3.14, Django 5.2 LTS; linter/formatter yapılandırılmamış):
+```bash
+.venv/Scripts/python.exe manage.py runserver
+.venv/Scripts/python.exe manage.py test                       # tüm testler
+.venv/Scripts/python.exe manage.py test accounts.tests.UserModelTests.test_create_superuser   # tek test
+.venv/Scripts/python.exe manage.py makemigrations && .venv/Scripts/python.exe manage.py migrate
+```
+
+**Ortam / ayarlar (`config/settings.py`):**
+- `SECRET_KEY` zorunlu, yoksa `ImproperlyConfigured` fırlatır. Yeni makinede `.env.example` → `.env` kopyala (`.env` gitignore'da, `DEBUG` varsayılanı `False`).
+- `DATABASE_URL` yoksa SQLite (`db.sqlite3`). Varsa Supabase transaction pooler ayarları otomatik uygulanır (`CONN_MAX_AGE=0`, `DISABLE_SERVER_SIDE_CURSORS`, `prepare_threshold=None`). Migration'ı direct/session pooler'dan çalıştırmak için `.env`'de `USE_DIRECT_DB=1` ve `DIRECT_DATABASE_URL` ver.
+- Statik dosyalar WhiteNoise ile (`CompressedStaticFilesStorage`, manifest yok); `STATICFILES_DIRS=static/`, `STATIC_ROOT=staticfiles/`.
+
+**Mimari notlar:**
+- `accounts.User`: `USERNAME_FIELD="email"`. E-posta `UserManager.normalize_email` ve `save()` ile küçük harfe çevrilir; kullanıcı adı benzersizliği büyük/küçük harf duyarsızdır (`UniqueConstraint(Lower("username"))` — `unique=True` ile birlikte). Yeni kayıt yolu eklerken e-posta normalizasyonunu bypass etme (`objects.create_user` ya da `save()` kullan; `bulk_create` normalize etmez).
+- `polls` app'i henüz boş; modeller Faz 2/3'te eklenecek.
+- Supabase `public` şemasındaki tablolarda RLS kapalıysa anon key ile REST üzerinden okunabilir; yeni tablolar migrate edildikten sonra RLS açılmalı (Django `postgres` rolüyle bağlandığı için etkilenmez).
+
+---
 
 > Bu dosya, **Kararsızım** web uygulamasının tüm detaylarını ve Claude Code ile adım adım geliştirme planını içerir.
 > Kullanım önerisi: Bu dosyayı proje köküne `CLAUDE.md` adıyla koy (Claude Code her oturumda otomatik okur). Sonra her fazı, bu dosyanın sonundaki **"Faz Promptları"** bölümündeki hazır promptlarla **tek tek** başlat. Bir faz bitip test edilmeden diğerine geçme.
