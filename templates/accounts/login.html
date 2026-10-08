@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş yap · Kararsızım{% endblock %}
+
+{% block content %}
+  <section class="card form-card">
+    <h1>Giriş yap</h1>
+    {% if next %}<p class="notice">Devam etmek için önce giriş yapmalısın.</p>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "partials/form_fields.html" %}
+      <button type="submit" class="btn btn-primary btn-block">Giriş yap</button>
+    </form>
+    <p class="form-footer">Hesabın yok mu? <a href="{% url 'register' %}">Kayıt ol</a></p>
+  </section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Kayıt ol · Kararsızım{% endblock %}
+
+{% block content %}
+  <section class="card form-card">
+    <h1>Kayıt ol</h1>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button type="submit" class="btn btn-primary btn-block">Kayıt ol</button>
+    </form>
+    <p class="form-footer">Zaten hesabın var mı? <a href="{% url 'login' %}">Giriş yap</a></p>
+  </section>
+{% endblock %}
