@@ -1,9 +1,11 @@
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from accounts.models import User
 
-from .models import Option, Poll
+from .models import Option, Poll, Vote
 
 PASSWORD = "Sifre-Cok-Guclu-2026"
 
@@ -204,3 +206,222 @@ class PollPrivacyTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertNotContains(response, "<script>alert(1)</script>")
         self.assertContains(response, "&lt;script&gt;")
+
+
+def vote_url(poll):
+    return reverse("vote", args=[poll.pk])
+
+
+class VoteTests(TestCase):
+    def setUp(self):
+        self.owner = make_user()
+        self.voter = make_user("zeynep")
+        self.poll = make_poll(self.owner)
+        self.sinema, self.restoran = self.poll.options.all()
+
+    def cast(self, option):
+        return self.client.post(vote_url(self.poll), {"option": option.pk})
+
+    def test_visitor_is_sent_to_login_and_back_to_the_poll(self):
+        detail = reverse("poll_detail", args=[self.poll.pk])
+        response = self.cast(self.sinema)
+        self.assertRedirects(response, f"{reverse('login')}?next={detail}", fetch_redirect_response=False)
+        self.assertFalse(Vote.objects.exists())
+        follow = self.client.get(response.url)
+        self.assertContains(follow, "Oy vermek için önce giriş yapmalısın.")
+
+    def test_login_after_vote_attempt_returns_to_the_poll(self):
+        detail = reverse("poll_detail", args=[self.poll.pk])
+        self.cast(self.sinema)
+        response = self.client.post(
+            reverse("login"), {"username": "zeynep@example.com", "password": PASSWORD, "next": detail}
+        )
+        self.assertRedirects(response, detail)
+
+    def test_vote_requires_post(self):
+        self.client.force_login(self.voter)
+        self.assertEqual(self.client.get(vote_url(self.poll)).status_code, 405)
+
+    def test_first_vote_is_created_with_message(self):
+        self.client.force_login(self.voter)
+        response = self.cast(self.sinema)
+        self.assertRedirects(response, reverse("poll_detail", args=[self.poll.pk]), fetch_redirect_response=False)
+        vote = Vote.objects.get()
+        self.assertEqual((vote.user, vote.poll, vote.option), (self.voter, self.poll, self.sinema))
+        self.assertContains(self.client.get(response.url), "Oyun kaydedildi, sağ ol! 💜")
+
+    def test_second_vote_updates_instead_of_adding(self):
+        self.client.force_login(self.voter)
+        self.cast(self.sinema)
+        self.cast(self.restoran)
+        vote = Vote.objects.get()  # still exactly one
+        self.assertEqual(vote.option, self.restoran)
+        self.assertEqual(self.client.get(reverse("poll_detail", args=[self.poll.pk])).context["poll"].total_votes, 1)
+
+    def test_owner_can_vote_on_own_poll(self):
+        self.client.force_login(self.owner)
+        self.cast(self.sinema)
+        self.assertEqual(Vote.objects.get().user, self.owner)
+
+    def test_option_of_another_poll_is_rejected(self):
+        other_poll = make_poll(self.owner, question="Başka anket", options=("X", "Y"))
+        foreign = other_poll.options.first()
+        self.client.force_login(self.voter)
+        response = self.cast(foreign)
+        self.assertRedirects(response, reverse("poll_detail", args=[self.poll.pk]), fetch_redirect_response=False)
+        self.assertFalse(Vote.objects.exists())
+
+    def test_missing_or_invalid_option_is_rejected(self):
+        self.client.force_login(self.voter)
+        for payload in [{}, {"option": ""}, {"option": "abc"}, {"option": "-1"}, {"option": "9" * 40}, {"option": "9999"}]:
+            response = self.client.post(vote_url(self.poll), payload)
+            self.assertEqual(response.status_code, 302, payload)
+        self.assertFalse(Vote.objects.exists())
+
+    def test_vote_on_missing_poll_is_404(self):
+        self.client.force_login(self.voter)
+        self.assertEqual(self.client.post(reverse("vote", args=[9999]), {"option": 1}).status_code, 404)
+
+    def test_database_enforces_one_vote_per_user_per_poll(self):
+        Vote.objects.create(user=self.voter, poll=self.poll, option=self.sinema)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Vote.objects.create(user=self.voter, poll=self.poll, option=self.restoran)
+
+    def test_deleting_a_poll_deletes_its_votes(self):
+        Vote.objects.create(user=self.voter, poll=self.poll, option=self.sinema)
+        self.poll.delete()
+        self.assertFalse(Vote.objects.exists())
+
+
+class ResultsTests(TestCase):
+    def setUp(self):
+        self.owner = make_user()
+        self.poll = make_poll(self.owner, options=("Sinema", "Restoran", "Evde kal"))
+        self.sinema, self.restoran, self.evde = self.poll.options.all()
+        self.voters = [make_user(f"kisi{i}") for i in range(4)]
+        for voter, option in zip(self.voters, [self.sinema, self.sinema, self.sinema, self.restoran]):
+            Vote.objects.create(user=voter, poll=self.poll, option=option)
+
+    def detail(self):
+        return self.client.get(reverse("poll_detail", args=[self.poll.pk]))
+
+    def test_results_are_visible_to_visitors(self):
+        response = self.detail()
+        self.assertContains(response, "Sonuçlar · 4 oy")
+        results = {o.text: (o.vote_count, o.percent) for o in response.context["poll"].option_results}
+        self.assertEqual(results, {"Sinema": (3, 75), "Restoran": (1, 25), "Evde kal": (0, 0)})
+
+    def test_only_the_leading_option_is_highlighted(self):
+        winners = [o.text for o in self.detail().context["poll"].option_results if o.is_winner]
+        self.assertEqual(winners, ["Sinema"])
+        self.assertContains(self.detail(), "👑 Sinema")
+
+    def test_ties_highlight_all_leaders_and_no_votes_highlight_none(self):
+        Vote.objects.filter(user=self.voters[0]).update(option=self.restoran)  # 2 - 2
+        winners = {o.text for o in self.detail().context["poll"].option_results if o.is_winner}
+        self.assertEqual(winners, {"Sinema", "Restoran"})
+        Vote.objects.all().delete()
+        self.assertFalse(any(o.is_winner for o in self.detail().context["poll"].option_results))
+
+    def test_voter_usernames_are_listed_under_their_option(self):
+        by_text = {o.text: [u.username for u in o.voters] for o in self.detail().context["poll"].option_results}
+        self.assertEqual(by_text, {"Sinema": ["kisi0", "kisi1", "kisi2"], "Restoran": ["kisi3"], "Evde kal": []})
+        self.assertContains(self.detail(), "@kisi3")
+
+    def test_current_vote_is_preselected_and_button_says_update(self):
+        self.client.force_login(self.voters[3])
+        response = self.detail()
+        self.assertEqual(response.context["user_option_id"], self.restoran.pk)
+        self.assertContains(response, "Oyumu güncelle")
+        self.client.force_login(self.owner)
+        self.assertContains(self.detail(), "Oyumu ver")
+
+    def test_options_keep_their_order(self):
+        texts = [o.text for o in self.detail().context["poll"].option_results]
+        self.assertEqual(texts, ["Sinema", "Restoran", "Evde kal"])
+
+    def test_detail_query_count_does_not_grow_with_votes(self):
+        with CaptureQueriesContext(connection) as before:
+            self.detail()
+        for i in range(10):
+            Vote.objects.create(user=make_user(f"extra{i}"), poll=self.poll, option=self.evde)
+        with CaptureQueriesContext(connection) as after:
+            self.detail()
+        self.assertEqual(len(before), len(after))
+
+
+class FeedVoteTests(TestCase):
+    def setUp(self):
+        self.owner = make_user()
+        self.quiet = make_poll(self.owner, question="Sessiz anket")
+        self.popular = make_poll(self.owner, question="Popüler anket")
+        self.newest = make_poll(self.owner, question="En yeni anket")
+        for i in range(3):
+            Vote.objects.create(user=make_user(f"v{i}"), poll=self.popular, option=self.popular.options.first())
+        Vote.objects.create(user=User.objects.get(username="v0"), poll=self.newest, option=self.newest.options.first())
+
+    def questions(self, **params):
+        return [p.question for p in self.client.get(reverse("home"), params).context["page"]]
+
+    def test_default_order_is_newest_first(self):
+        self.assertEqual(self.questions(), ["En yeni anket", "Popüler anket", "Sessiz anket"])
+
+    def test_most_voted_order(self):
+        self.assertEqual(self.questions(sirala="populer"), ["Popüler anket", "En yeni anket", "Sessiz anket"])
+
+    def test_unknown_sort_falls_back_to_newest(self):
+        self.assertEqual(self.questions(sirala="bozuk"), ["En yeni anket", "Popüler anket", "Sessiz anket"])
+
+    def test_pagination_links_keep_the_sort(self):
+        for i in range(21):
+            make_poll(self.owner, question=f"Ek {i}")
+        response = self.client.get(reverse("home"), {"sirala": "populer"})
+        self.assertContains(response, "?sayfa=2&amp;sirala=populer")
+
+    def test_cards_show_total_votes_and_mini_results(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, "3 oy")
+        self.assertContains(response, "%100")
+
+    def test_voted_badge_only_for_polls_the_user_voted_on(self):
+        self.client.force_login(User.objects.get(username="v0"))
+        response = self.client.get(reverse("home"))
+        flags = {p.question: p.user_voted for p in response.context["page"]}
+        self.assertEqual(flags, {"En yeni anket": True, "Popüler anket": True, "Sessiz anket": False})
+        self.assertContains(response, "✓ Oy verdin", count=2)
+
+    def test_visitor_sees_no_voted_badge(self):
+        self.assertNotContains(self.client.get(reverse("home")), "✓ Oy verdin")
+
+    def test_feed_query_count_does_not_grow_with_polls_or_votes(self):
+        self.client.force_login(User.objects.get(username="v0"))
+        with CaptureQueriesContext(connection) as before:
+            self.client.get(reverse("home"))
+        for i in range(8):
+            poll = make_poll(self.owner, question=f"Çok {i}", options=("A", "B", "C", "D", "E"))
+            Vote.objects.create(user=User.objects.get(username="v1"), poll=poll, option=poll.options.first())
+        with CaptureQueriesContext(connection) as after:
+            self.client.get(reverse("home"))
+        self.assertEqual(len(before), len(after))
+
+
+class VotePrivacyTests(TestCase):
+    def test_voter_email_is_never_rendered(self):
+        owner = make_user()
+        voter = make_user("zeynep")
+        poll = make_poll(owner)
+        Vote.objects.create(user=voter, poll=poll, option=poll.options.first())
+        urls = [
+            reverse("home"),
+            reverse("home") + "?sirala=populer",
+            reverse("poll_detail", args=[poll.pk]),
+            reverse("user_profile", args=[owner.username]),
+            reverse("user_profile", args=[voter.username]),
+        ]
+        for client_user in (None, owner, voter):
+            if client_user:
+                self.client.force_login(client_user)
+            for url in urls:
+                response = self.client.get(url)
+                for email in ("ahmet@example.com", "zeynep@example.com"):
+                    self.assertNotContains(response, email, msg_prefix=url)

@@ -3,6 +3,13 @@
 {% block content %}
   <h1 class="page-title">Kararsız mısın? Topluluğa sor.</h1>
 
+  <nav class="tabs" aria-label="Sıralama">
+    <a class="tab{% if sort == 'yeni' %} is-active{% endif %}" href="{% url 'home' %}"
+       {% if sort == 'yeni' %}aria-current="page"{% endif %}>En yeni</a>
+    <a class="tab{% if sort == 'populer' %} is-active{% endif %}" href="{% url 'home' %}?sirala=populer"
+       {% if sort == 'populer' %}aria-current="page"{% endif %}>En çok oy alan</a>
+  </nav>
+
   {% for poll in page %}
     {% include "partials/poll_card.html" %}
   {% empty %}

@@ -12,11 +12,42 @@
     <h1 class="poll-question">{{ poll.question }}</h1>
     {% if poll.description %}<p class="poll-description">{{ poll.description|linebreaksbr }}</p>{% endif %}
 
-    <ul class="option-list">
-      {% for option in poll.options.all %}
-        <li class="option-item">{{ option.text }}</li>
+    <form method="post" action="{% url 'vote' poll.pk %}" class="vote-form">
+      {% csrf_token %}
+      <div class="vote-options">
+        {% for option in poll.option_results %}
+          <label class="vote-pill option-color-{{ option.color }}">
+            <input type="radio" name="option" value="{{ option.pk }}"{% if option.pk == user_option_id %} checked{% endif %} required>
+            <span class="vote-pill-text">{{ option.text }}</span>
+            <span class="vote-pill-check" aria-hidden="true">✓</span>
+          </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">{% if user_option_id %}Oyumu güncelle{% else %}Oyumu ver{% endif %}</button>
+    </form>
+
+    <section class="results" aria-labelledby="results-title">
+      <h2 id="results-title" class="results-title">Sonuçlar · {{ poll.total_votes }} oy</h2>
+      {% for option in poll.option_results %}
+        <div class="result option-color-{{ option.color }}{% if option.is_winner %} is-winner{% endif %}">
+          <div class="result-head">
+            <span class="result-text">{% if option.is_winner %}👑 {% endif %}{{ option.text }}</span>
+            <span class="result-numbers">{{ option.vote_count }} oy · %{{ option.percent }}</span>
+          </div>
+          <div class="bar"><div class="bar-fill" style="width: {{ option.percent }}%"></div></div>
+          {% if option.voters %}
+            <details class="voters">
+              <summary>Kimler oy verdi?</summary>
+              <ul>
+                {% for voter in option.voters %}
+                  <li><a href="{% url 'user_profile' voter.username %}">@{{ voter.username }}</a></li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endif %}
+        </div>
       {% endfor %}
-    </ul>
+    </section>
 
     {% if user.is_authenticated and user == poll.author %}
       <a class="btn btn-danger-text" href="{% url 'poll_delete' poll.pk %}">Sil</a>

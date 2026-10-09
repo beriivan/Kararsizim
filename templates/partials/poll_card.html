@@ -5,10 +5,19 @@
     <span class="poll-time">· {{ poll.created_at|naturaltime }}</span>
   </div>
   <h2 class="poll-question"><a class="poll-link" href="{% url 'poll_detail' poll.pk %}">{{ poll.question }}</a></h2>
-  <ul class="option-preview">
-    {% for option in poll.options.all|slice:":3" %}
-      <li>{{ option.text }}</li>
+  <ul class="mini-results">
+    {% for option in poll.option_results|slice:":3" %}
+      <li class="mini-option option-color-{{ option.color }}">
+        <div class="mini-label"><span>{{ option.text }}</span><span class="mini-percent">%{{ option.percent }}</span></div>
+        <div class="bar"><div class="bar-fill" style="width: {{ option.percent }}%"></div></div>
+      </li>
     {% endfor %}
-    {% if poll.options.all|length > 3 %}<li class="option-more">+{{ poll.options.all|length|add:"-3" }} seçenek daha</li>{% endif %}
+    {% if poll.option_results|length > 3 %}
+      <li class="option-more">+{{ poll.option_results|length|add:"-3" }} seçenek daha</li>
+    {% endif %}
   </ul>
+  <div class="poll-footer">
+    <span>{{ poll.total_votes }} oy</span>
+    {% if poll.user_voted %}<span class="badge">✓ Oy verdin</span>{% endif %}
+  </div>
 </article>

@@ -34,3 +34,24 @@ class Option(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class Vote(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="votes", verbose_name="kullanıcı"
+    )
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="votes", verbose_name="anket")
+    option = models.ForeignKey(Option, on_delete=models.CASCADE, related_name="votes", verbose_name="seçenek")
+    created_at = models.DateTimeField("oluşturulma tarihi", auto_now_add=True)
+    updated_at = models.DateTimeField("güncellenme tarihi", auto_now=True)
+
+    class Meta:
+        constraints = [
+            # One vote per user per poll; changing a vote updates this row.
+            models.UniqueConstraint(fields=["user", "poll"], name="polls_vote_one_per_user_per_poll"),
+        ]
+        verbose_name = "oy"
+        verbose_name_plural = "oylar"
+
+    def __str__(self):
+        return f"{self.user} → {self.option}"

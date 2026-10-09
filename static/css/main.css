@@ -8,8 +8,14 @@
   --text-muted: #7A7491;
   --primary: #7C5CFF;
   --primary-soft: #E9E3FF;
+  --pink: #FF7EB6;
   --pink-soft: #FFE4F0;
+  --mint: #3DD9A4;
   --mint-soft: #DDF8EE;
+  --sun: #FFC857;
+  --sun-soft: #FFF3D6;
+  --sky: #5CC8FF;
+  --sky-soft: #DFF4FF;
   --danger: #FF5C7A;
   --radius: 16px;
   --radius-lg: 24px;
@@ -80,9 +86,6 @@ button.btn[hidden], .option-row[hidden] { display: none; }
 .poll-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-lg); }
 .poll-link:focus-visible { outline: none; }
 .poll-link:focus-visible::after { outline: 3px solid var(--primary-soft); outline-offset: 2px; }
-.option-preview { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.option-preview li { background: var(--surface-soft); border-radius: 999px; padding: 4px 12px; font-size: 0.9rem; }
-.option-preview .option-more { background: transparent; color: var(--text-muted); }
 
 .poll-detail .poll-question { font-size: 1.6rem; }
 .poll-description { color: var(--text-muted); }
@@ -102,3 +105,44 @@ button.btn[hidden], .option-row[hidden] { display: none; }
 .option-row input { flex: 1; padding: 10px 12px; font: inherit; color: var(--text); background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); }
 .option-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 .option-remove { font-size: 1.3rem; line-height: 1; padding: 6px 12px; }
+
+/* --- Votes (Phase 3) --- */
+.option-color-0 { --opt: var(--primary); --opt-soft: var(--primary-soft); }
+.option-color-1 { --opt: var(--pink);    --opt-soft: var(--pink-soft); }
+.option-color-2 { --opt: var(--mint);    --opt-soft: var(--mint-soft); }
+.option-color-3 { --opt: var(--sun);     --opt-soft: var(--sun-soft); }
+.option-color-4 { --opt: var(--sky);     --opt-soft: var(--sky-soft); }
+
+.bar { height: 10px; background: var(--opt-soft); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--opt); border-radius: 999px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab { padding: 6px 16px; border-radius: 999px; background: var(--surface); color: var(--text-muted); text-decoration: none; font-weight: 600; }
+.tab.is-active { background: var(--primary-soft); color: var(--primary); }
+
+.mini-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.mini-label { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; margin-bottom: 4px; }
+.mini-percent { color: var(--text-muted); }
+.mini-results .bar { height: 6px; }
+.option-more { color: var(--text-muted); font-size: 0.9rem; }
+.poll-footer { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--text-muted); font-size: 0.9rem; }
+.badge { background: var(--mint-soft); color: var(--text); border-radius: 999px; padding: 2px 10px; font-weight: 600; }
+
+.vote-form { margin: 16px 0 24px; }
+.vote-options { display: grid; gap: 10px; margin-bottom: 14px; }
+.vote-pill { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface-soft); border: 2px solid transparent; border-radius: var(--radius); padding: 12px 16px; font-weight: 600; cursor: pointer; }
+.vote-pill input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.vote-pill-check { visibility: hidden; color: var(--opt); font-weight: 800; }
+.vote-pill:has(input:checked) { border-color: var(--opt); background: var(--opt-soft); }
+.vote-pill:has(input:checked) .vote-pill-check { visibility: visible; }
+.vote-pill:has(input:focus-visible) { outline: 3px solid var(--primary-soft); outline-offset: 2px; }
+
+.results-title { font-size: 1.1rem; margin: 0 0 12px; }
+.result { margin-bottom: 16px; }
+.result-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-weight: 600; }
+.result-numbers { color: var(--text-muted); font-weight: 400; white-space: nowrap; }
+.result.is-winner .result-text { font-weight: 800; }
+.voters { margin-top: 6px; font-size: 0.9rem; }
+.voters summary { cursor: pointer; color: var(--text-muted); }
+.voters ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.voters li a { background: var(--surface-soft); border-radius: 999px; padding: 2px 10px; text-decoration: none; }
