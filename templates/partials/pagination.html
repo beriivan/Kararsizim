@@ -1,0 +1,11 @@
+{% if page.has_other_pages %}
+  <nav class="pagination" aria-label="Sayfalar">
+    {% if page.has_previous %}
+      <a class="btn btn-text" href="?sayfa={{ page.previous_page_number }}">← Önceki</a>
+    {% endif %}
+    <span class="pagination-info">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+      <a class="btn btn-text" href="?sayfa={{ page.next_page_number }}">Sonraki →</a>
+    {% endif %}
+  </nav>
+{% endif %}

@@ -1,0 +1,14 @@
+{% load humanize %}
+<article class="card poll-card">
+  <div class="poll-meta">
+    <a class="poll-author" href="{% url 'user_profile' poll.author.username %}">@{{ poll.author.username }}</a>
+    <span class="poll-time">· {{ poll.created_at|naturaltime }}</span>
+  </div>
+  <h2 class="poll-question"><a class="poll-link" href="{% url 'poll_detail' poll.pk %}">{{ poll.question }}</a></h2>
+  <ul class="option-preview">
+    {% for option in poll.options.all|slice:":3" %}
+      <li>{{ option.text }}</li>
+    {% endfor %}
+    {% if poll.options.all|length > 3 %}<li class="option-more">+{{ poll.options.all|length|add:"-3" }} seçenek daha</li>{% endif %}
+  </ul>
+</article>

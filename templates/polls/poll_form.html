@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Yeni anket · Kararsızım{% endblock %}
+
+{% block content %}
+  <section class="card form-card">
+    <h1>Kararını topluluğa sor</h1>
+    <form method="post" novalidate id="poll-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="field">
+        <label for="{{ form.question.id_for_label }}">{{ form.question.label }}</label>
+        {{ form.question }}
+        <div class="field-help"><span id="question-counter" data-max="150"></span></div>
+        {% if form.question.errors %}
+          <ul class="field-errors">{% for error in form.question.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <ul class="field-errors">{% for error in form.description.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <fieldset class="field options-field">
+        <legend>Seçenekler (2–5 tane)</legend>
+        <div id="option-list">
+          {% for value in form.option_values %}
+            <div class="option-row" data-option-row>
+              <input type="text" name="option" value="{{ value }}" maxlength="80"
+                     placeholder="Seçenek {{ forloop.counter }}" aria-label="Seçenek {{ forloop.counter }}">
+              <button type="button" class="btn btn-text option-remove" data-remove hidden aria-label="Seçeneği kaldır">×</button>
+            </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn btn-soft" id="add-option" hidden>+ Seçenek ekle</button>
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary btn-block">Kararımı sor 🚀</button>
+    </form>
+  </section>
+  <script src="{% static 'js/create-poll.js' %}" defer></script>
+{% endblock %}

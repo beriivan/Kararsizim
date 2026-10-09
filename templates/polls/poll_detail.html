@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ poll.question }} · Kararsızım{% endblock %}
+
+{% block content %}
+  <article class="card poll-detail">
+    <div class="poll-meta">
+      <a class="poll-author" href="{% url 'user_profile' poll.author.username %}">@{{ poll.author.username }}</a>
+      <span class="poll-time">· {{ poll.created_at|naturaltime }}</span>
+    </div>
+    <h1 class="poll-question">{{ poll.question }}</h1>
+    {% if poll.description %}<p class="poll-description">{{ poll.description|linebreaksbr }}</p>{% endif %}
+
+    <ul class="option-list">
+      {% for option in poll.options.all %}
+        <li class="option-item">{{ option.text }}</li>
+      {% endfor %}
+    </ul>
+
+    {% if user.is_authenticated and user == poll.author %}
+      <a class="btn btn-danger-text" href="{% url 'poll_delete' poll.pk %}">Sil</a>
+    {% endif %}
+  </article>
+  <p><a href="{% url 'home' %}">← Tüm anketler</a></p>
+{% endblock %}

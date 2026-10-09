@@ -6,6 +6,7 @@ Secrets and environment-specific values are read from environment variables
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -91,7 +92,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 # (Supabase direct connection or session pooler, port 5432).
 # Without any URL we fall back to SQLite for quick local development.
 
-if env_bool("USE_DIRECT_DB"):
+if "test" in sys.argv[1:2]:
+    # `manage.py test` must never touch the real (Supabase) database.
+    DATABASE_URL = ""
+elif env_bool("USE_DIRECT_DB"):
     DATABASE_URL = os.environ.get("DIRECT_DATABASE_URL", "")
 else:
     DATABASE_URL = os.environ.get("DATABASE_URL", "")

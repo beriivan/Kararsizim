@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}@{{ profile_user.username }} · Kararsızım{% endblock %}
+
+{% block content %}
+  <header class="profile-header">
+    <h1 class="page-title">@{{ profile_user.username }}</h1>
+    <p class="profile-count">{{ poll_count }} anket</p>
+  </header>
+
+  {% for poll in page %}
+    {% include "partials/poll_card.html" %}
+  {% empty %}
+    <section class="card empty-state">
+      <p>@{{ profile_user.username }} henüz anket açmamış.</p>
+    </section>
+  {% endfor %}
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

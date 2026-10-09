@@ -3,7 +3,8 @@
     <a class="logo" href="{% url 'home' %}">⚖️ kararsızım</a>
     <nav class="navbar-links">
       {% if user.is_authenticated %}
-        <span class="navbar-user">@{{ user.username }}</span>
+        <a class="btn btn-primary" href="{% url 'poll_create' %}">+ Anket aç</a>
+        <a class="navbar-user" href="{% url 'user_profile' user.username %}">@{{ user.username }}</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-text">Çıkış</button>
