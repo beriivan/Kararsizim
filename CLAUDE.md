@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
 
-**Durum:** Faz 0 ve Faz 1 kodu tamam (iskelet, custom User, kayıt/giriş/çıkış). Supabase'e migrate + RLS + `createsuperuser` adımları kullanıcı `.env`'e bağlantı bilgilerini girince yapılacak. Faz 2 henüz başlamadı. `/` şimdilik `templates/home.html` placeholder'ı (Faz 2'de `poll_list` ile değişecek).
+**Durum:** Faz 0 ve Faz 1 tamam (iskelet, custom User, kayıt/giriş/çıkış). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1) açık, migration uygulandı ve tüm `public` tablolarında RLS açık (policy yok, bilerek). Her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Faz 2 henüz başlamadı. `/` şimdilik `templates/home.html` placeholder'ı (Faz 2'de `poll_list` ile değişecek).
 
 **Komutlar** (Windows; venv Python 3.14, Django 5.2 LTS; linter/formatter yapılandırılmamış):
 ```bash
