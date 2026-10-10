@@ -12,12 +12,18 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
+from accounts.ratelimit import rate_limit
+
 from .forms import PollForm
 from .models import Option, Poll, Vote
 
 User = get_user_model()
 POLLS_PER_PAGE = 20
 OPTION_COLORS = 5  # options cycle through 5 colors (see main.css)
+
+# Abuse limits (actions per window).
+POLL_CREATE_LIMIT, POLL_CREATE_WINDOW = 10, 60 * 60  # per user, per hour
+VOTE_LIMIT, VOTE_WINDOW = 60, 10 * 60                # per user (or IP), per 10 minutes
 
 # NOTE: Django ignores Meta.ordering on aggregate (GROUP BY) queries, so every
 # annotated queryset below sets its ordering explicitly.
@@ -75,6 +81,7 @@ def poll_list(request):
 
 
 @login_required
+@rate_limit("poll_create", POLL_CREATE_LIMIT, POLL_CREATE_WINDOW, by="user")
 def poll_create(request):
     if request.method == "POST":
         form = PollForm(request.POST)
@@ -113,6 +120,7 @@ def _option_of_poll(poll, raw_id):
 
 
 @require_POST
+@rate_limit("vote", VOTE_LIMIT, VOTE_WINDOW, by="user")
 def vote(request, pk):
     poll = get_object_or_404(Poll, pk=pk)
     detail_url = reverse("poll_detail", args=[poll.pk])

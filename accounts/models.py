@@ -62,6 +62,10 @@ class User(AbstractUser):
         error_messages={"unique": "Bu kullanıcı adı zaten alınmış."},
     )
 
+    # Set once the user proves they control the address (verification link or
+    # password reset). `db_default` keeps inserts from older code working.
+    email_verified = models.BooleanField(default=False, db_default=False)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
@@ -87,3 +91,19 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class RateLimitEvent(models.Model):
+    """One counted action (e.g. a login attempt) for rate limiting.
+
+    Serverless instances share no memory, so counters live in the database.
+    """
+
+    key = models.CharField(max_length=160)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["key", "created_at"])]
+
+    def __str__(self):
+        return f"{self.key} @ {self.created_at:%Y-%m-%d %H:%M:%S}"

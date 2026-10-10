@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Biraz yavaşla · Kararsızım{% endblock %}
+
+{% block content %}
+  <section class="card error-page">
+    <p class="error-code">429</p>
+    <h1>Çok hızlı gidiyorsun 🐢</h1>
+    <p>Kısa sürede çok fazla deneme yaptın. Yaklaşık {{ retry_minutes }} dakika sonra tekrar dene.</p>
+    <a class="btn btn-primary" href="{% url 'home' %}">Ana sayfaya dön</a>
+  </section>
+{% endblock %}
