@@ -37,6 +37,8 @@ if os.environ.get("VERCEL"):
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 if not SECRET_KEY:
     raise ImproperlyConfigured("SECRET_KEY environment variable is required (see .env.example).")
+if SECRET_KEY == "change-me" and not DEBUG:
+    raise ImproperlyConfigured("SECRET_KEY is still the .env.example placeholder; generate a real one.")
 
 # Vercel exposes the deployment's own host names as system env vars
 # (without scheme). Trust exactly those, not all of *.vercel.app.

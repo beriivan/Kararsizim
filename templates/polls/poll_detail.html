@@ -70,6 +70,7 @@
                 {% for voter in option.voters %}
                   <li><a href="{% url 'user_profile' voter.username %}">@{{ voter.username }}</a></li>
                 {% endfor %}
+                {% if option.more_voters %}<li class="voters-more">+ {{ option.more_voters }} kişi daha</li>{% endif %}
               </ul>
             </details>
           {% endif %}

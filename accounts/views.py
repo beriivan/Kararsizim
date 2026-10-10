@@ -1,3 +1,5 @@
+import hashlib
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
@@ -12,12 +14,12 @@ from django.views.decorators.http import require_POST
 from .emails import read_token, send_verification_email
 from .forms import LoginForm, RegisterForm
 from .models import User
-from .ratelimit import allow, client_ip, rate_limit, refund, too_many_requests
+from .ratelimit import allow, client_ip, is_blocked, rate_limit, record, refund, too_many_requests
 
 # Abuse limits (attempts per window).
 REGISTER_LIMIT, REGISTER_WINDOW = 10, 60 * 60        # per IP, per hour
 LOGIN_IP_LIMIT, LOGIN_IP_WINDOW = 20, 10 * 60        # per IP, per 10 minutes
-LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW = 8, 10 * 60   # per e-mail, per 10 minutes
+LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW = 8, 10 * 60   # failed attempts per (IP, e-mail), per 10 minutes
 ADMIN_LOGIN_LIMIT, ADMIN_LOGIN_WINDOW = 10, 10 * 60  # per IP, per 10 minutes (/admin/login/)
 
 
@@ -53,13 +55,20 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
 
     def post(self, request, *args, **kwargs):
-        # Throttle by IP and by the e-mail being tried (slows password guessing).
+        # Throttle all attempts per IP, and *failed* attempts per (IP, e-mail).
+        # Keying failures by IP too means a stranger cannot lock the real owner
+        # out of an account just by guessing wrong passwords for its address.
+        ip = client_ip(request)
         email = User.objects.normalize_email(request.POST.get("username", ""))[:120]
-        ip_ok = allow(f"login:ip:{client_ip(request)}", LOGIN_IP_LIMIT, LOGIN_IP_WINDOW)
-        email_ok = allow(f"login:email:{email}", LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW)
-        if not (ip_ok and email_ok):
+        fail_key = "login:fail:" + hashlib.sha256(f"{ip}|{email}".encode()).hexdigest()[:40]
+        if not allow(f"login:ip:{ip}", LOGIN_IP_LIMIT, LOGIN_IP_WINDOW) or is_blocked(
+            fail_key, LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW
+        ):
             return too_many_requests(request, LOGIN_EMAIL_WINDOW)
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        if response.status_code != 302:  # form re-rendered with an error
+            record(fail_key)
+        return response
 
 
 # --- Password reset (Django's token machinery, Turkish pages) -----------------

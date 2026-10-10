@@ -23,8 +23,8 @@ def client_ip(request):
     """Client address; behind Vercel the proxy sets X-Forwarded-For."""
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "unknown")
+        return forwarded.split(",")[0].strip()[:45]  # longest IPv6 text form; keeps keys short
+    return request.META.get("REMOTE_ADDR", "unknown")[:45]
 
 
 def allow(key, limit, window_seconds):
@@ -38,6 +38,16 @@ def allow(key, limit, window_seconds):
     if random.random() < CLEANUP_PROBABILITY:
         RateLimitEvent.objects.filter(created_at__lt=now - KEEP_EVENTS_FOR).delete()
     return True
+
+
+def is_blocked(key, limit, window_seconds):
+    """True when `key` already has `limit` recorded events in the window (records nothing)."""
+    since = timezone.now() - timedelta(seconds=window_seconds)
+    return RateLimitEvent.objects.filter(key=key, created_at__gte=since).count() >= limit
+
+
+def record(key):
+    RateLimitEvent.objects.create(key=key)
 
 
 def refund(key):

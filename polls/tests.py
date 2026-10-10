@@ -425,3 +425,28 @@ class VotePrivacyTests(TestCase):
                 response = self.client.get(url)
                 for email in ("ahmet@example.com", "zeynep@example.com"):
                     self.assertNotContains(response, email, msg_prefix=url)
+
+
+class VoteEdgeCaseTests(TestCase):
+    def setUp(self):
+        self.author = make_user("yazar")
+        self.poll = Poll.objects.create(author=self.author, question="Soru?")
+        self.a = Option.objects.create(poll=self.poll, text="A", order=0)
+        self.b = Option.objects.create(poll=self.poll, text="B", order=1)
+
+    def test_unicode_digit_option_is_rejected_not_a_500(self):
+        self.client.force_login(make_user("oyuncu"))
+        response = self.client.post(reverse("vote", args=[self.poll.pk]), {"option": "²"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Vote.objects.count(), 0)
+
+    def test_voter_list_is_capped_with_a_remainder(self):
+        from . import views
+
+        users = [make_user(f"kisi{i:03d}") for i in range(views.VOTERS_SHOWN + 3)]
+        Vote.objects.bulk_create([Vote(user=u, poll=self.poll, option=self.a) for u in users])
+        response = self.client.get(reverse("poll_detail", args=[self.poll.pk]))
+        option = next(o for o in response.context["poll"].option_results if o.pk == self.a.pk)
+        self.assertEqual(len(option.voters), views.VOTERS_SHOWN)
+        self.assertEqual(option.more_voters, 3)
+        self.assertContains(response, "+ 3 kişi daha")

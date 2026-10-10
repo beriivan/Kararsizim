@@ -126,3 +126,25 @@ class AdminLoginRateLimitTests(TestCase):
             self.assertEqual(self.client.post(url, data).status_code, 200)
         self.assertEqual(self.client.post(url, data).status_code, 429)
         self.assertEqual(self.client.get(url).status_code, 200)  # viewing the form is free
+
+
+class LoginLockoutTests(TestCase):
+    def setUp(self):
+        User.objects.create_user(email="ahmet@example.com", username="ahmet", password=PASSWORD)
+
+    def attempt(self, ip, password):
+        return self.client.post(
+            reverse("login"), {"username": "ahmet@example.com", "password": password}, HTTP_X_FORWARDED_FOR=ip
+        )
+
+    def test_a_stranger_cannot_lock_the_owner_out(self):
+        for _ in range(account_views.LOGIN_EMAIL_LIMIT + 1):
+            self.attempt("203.0.113.9", "yanlis")
+        self.assertEqual(self.attempt("203.0.113.9", "yanlis").status_code, 429)
+        owner = self.attempt("198.51.100.7", PASSWORD)  # different IP, correct password
+        self.assertEqual(owner.status_code, 302)
+
+    def test_successful_logins_do_not_count_as_failures(self):
+        for _ in range(account_views.LOGIN_EMAIL_LIMIT + 2):
+            self.client.logout()
+            self.assertEqual(self.attempt("198.51.100.7", PASSWORD).status_code, 302)

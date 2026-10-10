@@ -1,5 +1,4 @@
 import uuid
-from collections import defaultdict
 
 from django.conf import settings
 from django.contrib import messages
@@ -21,6 +20,7 @@ from .models import Option, Poll, Vote
 
 User = get_user_model()
 POLLS_PER_PAGE = 20
+VOTERS_SHOWN = 50  # voter names listed per option on the detail page
 OPTION_COLORS = 5  # options cycle through 5 colors (see main.css)
 
 # Abuse limits (actions per window).
@@ -106,14 +106,16 @@ def poll_create(request):
 def poll_detail(request, pk):
     poll = _decorate_poll(get_object_or_404(_poll_queryset(), pk=pk))
 
-    voters = defaultdict(list)
     user_option_id = None
-    for vote in Vote.objects.filter(poll=poll).select_related("user").order_by("user__username"):
-        voters[vote.option_id].append(vote.user)
-        if request.user.is_authenticated and vote.user_id == request.user.pk:
-            user_option_id = vote.option_id
+    if request.user.is_authenticated:
+        user_option_id = (
+            Vote.objects.filter(poll=poll, user=request.user).values_list("option_id", flat=True).first()
+        )
+    # At most 5 options, each capped, so a popular poll stays cheap to render.
     for option in poll.option_results:
-        option.voters = voters[option.pk]
+        shown = Vote.objects.filter(option_id=option.pk).select_related("user").order_by("user__username")
+        option.voters = [vote.user for vote in shown[:VOTERS_SHOWN]]
+        option.more_voters = max(0, option.vote_count - len(option.voters))
 
     context = {
         "poll": poll,
@@ -126,7 +128,8 @@ def poll_detail(request, pk):
 
 def _option_of_poll(poll, raw_id):
     """The option with this id *belonging to this poll*, or None."""
-    if not raw_id or not raw_id.isdigit() or len(raw_id) > 18:
+    # isdigit() is also True for characters like "²" that int() rejects.
+    if not raw_id or not (raw_id.isascii() and raw_id.isdigit()) or len(raw_id) > 18:
         return None
     return poll.options.filter(pk=int(raw_id)).first()
 
