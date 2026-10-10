@@ -3,6 +3,18 @@
 
 {% block title %}{{ poll.question }} · Kararsızım{% endblock %}
 
+{% block meta %}
+  <meta name="description" content="{% for option in poll.option_results %}{{ option.text }}{% if not forloop.last %} / {% endif %}{% endfor %} · {{ poll.total_votes }} oy. Sen ne dersin?">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Kararsızım">
+  <meta property="og:title" content="{{ poll.question }}">
+  <meta property="og:description" content="{% for option in poll.option_results %}{{ option.text }}{% if not forloop.last %} / {% endif %}{% endfor %} · {{ poll.total_votes }} oy. Sen ne dersin?">
+  <meta property="og:url" content="{{ share_url }}">
+  <meta property="og:image" content="{{ og_image_url }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="{{ share_url }}">
+{% endblock %}
+
 {% block content %}
   <article class="card poll-detail">
     <div class="poll-meta">
@@ -63,6 +75,16 @@
           {% endif %}
         </div>
       {% endfor %}
+    </section>
+
+    <section class="share" aria-labelledby="share-title">
+      <h2 id="share-title" class="results-title">Arkadaşlarına sor</h2>
+      <div class="share-row">
+        <input type="text" class="share-input" value="{{ share_url }}" readonly aria-label="Anket bağlantısı" id="share-url">
+        <button type="button" class="btn btn-soft" data-copy="#share-url" hidden>Linki kopyala</button>
+        <button type="button" class="btn btn-soft" data-share data-share-title="{{ poll.question }}" data-share-url="{{ share_url }}" hidden>Paylaş</button>
+      </div>
+      <p class="share-status" id="share-status" role="status" aria-live="polite"></p>
     </section>
 
     {% if user.is_authenticated and user == poll.author %}

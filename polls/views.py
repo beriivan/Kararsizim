@@ -9,6 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -110,7 +111,13 @@ def poll_detail(request, pk):
     for option in poll.option_results:
         option.voters = voters[option.pk]
 
-    return render(request, "polls/poll_detail.html", {"poll": poll, "user_option_id": user_option_id})
+    context = {
+        "poll": poll,
+        "user_option_id": user_option_id,
+        "share_url": request.build_absolute_uri(reverse("poll_detail", args=[poll.pk])),
+        "og_image_url": request.build_absolute_uri(static("img/og-image.png")),
+    }
+    return render(request, "polls/poll_detail.html", context)
 
 
 def _option_of_poll(poll, raw_id):

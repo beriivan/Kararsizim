@@ -213,6 +213,13 @@ a:hover { text-decoration: none; }
 .deadline-chip { color: var(--text-muted); }
 .badge-closed { background: var(--sun-soft); }
 
+/* --- Share ----------------------------------------------------------------- */
+
+.share { margin: 8px 0 20px; }
+.share-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.share-input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; font-size: 0.9rem; color: var(--text-muted); background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--radius); }
+.share-status { min-height: 1.4em; margin: 6px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
 /* --- Error pages ----------------------------------------------------------- */
 
 .error-page { text-align: center; padding: 40px 22px; }

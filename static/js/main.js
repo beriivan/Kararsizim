@@ -50,3 +50,36 @@
     document.querySelectorAll("form[data-submitting]").forEach(unlock);
   });
 })();
+
+// Share: copy the poll link / use the native share sheet when available.
+// Without JavaScript the read-only link field is still there to copy by hand.
+(function () {
+  var status = document.getElementById("share-status");
+  function say(text) { if (status) status.textContent = text; }
+
+  document.querySelectorAll("[data-copy]").forEach(function (button) {
+    var input = document.querySelector(button.dataset.copy);
+    if (!input) return;
+    button.hidden = false;
+    button.addEventListener("click", function () {
+      var done = function () { say("Bağlantı kopyalandı ✓"); };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(input.value).then(done, function () { input.select(); });
+      } else {
+        input.select();
+        try { document.execCommand("copy"); done(); } catch (e) { say("Bağlantıyı seçtik, kopyalayabilirsin."); }
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-share]").forEach(function (button) {
+    if (!navigator.share) return;
+    button.hidden = false;
+    button.addEventListener("click", function () {
+      navigator.share({ title: button.dataset.shareTitle, url: button.dataset.shareUrl }).catch(function () {});
+    });
+  });
+
+  var shareInput = document.getElementById("share-url");
+  if (shareInput) shareInput.addEventListener("focus", function () { shareInput.select(); });
+})();
