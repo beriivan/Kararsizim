@@ -78,8 +78,9 @@ Policy yazmana gerek yok. Django tabloların sahibi `postgres` rolüyle bağland
 
 ## Vercel'e deploy
 
-Vercel, Django'yu `config/settings.py` içindeki `WSGI_APPLICATION` üzerinden kendiliğinden bulur
-(ayrı `vercel.json` gerekmez). Python sürümü `.python-version` dosyasından okunur (`3.12`).
+Vercel, Django'yu `config/settings.py` içindeki `WSGI_APPLICATION` üzerinden kendiliğinden bulur.
+`vercel.json` yalnızca fonksiyonu Supabase ile aynı bölgeye (`fra1`, Frankfurt) almak için var;
+varsayılan bölge ABD'dir ve her veritabanı sorgusunu yavaşlatır. Python sürümü `.python-version` dosyasından okunur (`3.12`).
 
 1. Kodu GitHub'a gönder.
 2. [vercel.com/new](https://vercel.com/new) üzerinden GitHub reposunu içe aktar. Framework olarak Django algılanmalı.
