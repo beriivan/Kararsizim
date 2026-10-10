@@ -53,6 +53,7 @@ def _decorate_poll(poll):
         option.color = index % OPTION_COLORS
         option.is_winner = top > 0 and option.vote_count == top
     poll.option_results = options
+    poll.winners = [option for option in options if option.is_winner]
     return poll
 
 
@@ -124,6 +125,10 @@ def _option_of_poll(poll, raw_id):
 def vote(request, pk):
     poll = get_object_or_404(Poll, pk=pk)
     detail_url = reverse("poll_detail", args=[poll.pk])
+
+    if poll.is_closed:
+        messages.error(request, "Bu anketin süresi doldu, artık oy verilemiyor.")
+        return redirect(detail_url)
 
     if not request.user.is_authenticated:
         messages.info(request, "Oy vermek için önce giriş yapmalısın.")

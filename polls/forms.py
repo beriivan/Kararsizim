@@ -1,13 +1,24 @@
 import uuid
+from datetime import timedelta
 
 from django import forms
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from .models import Option, Poll
 
 MIN_OPTIONS = 2
 MAX_OPTIONS = 5
 OPTION_MAX_LENGTH = Option._meta.get_field("text").max_length
+
+# Voting window choices: value -> (label, length). "" means the poll never closes.
+DURATIONS = {
+    "": ("Süresiz", None),
+    "1h": ("1 saat", timedelta(hours=1)),
+    "24h": ("24 saat", timedelta(hours=24)),
+    "3d": ("3 gün", timedelta(days=3)),
+    "7d": ("7 gün", timedelta(days=7)),
+}
 
 
 class PollForm(forms.ModelForm):
@@ -22,6 +33,11 @@ class PollForm(forms.ModelForm):
         required=False,
         max_length=500,
         widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    duration = forms.ChoiceField(
+        label="Oylama ne kadar sürsün?",
+        required=False,
+        choices=[(key, label) for key, (label, _) in DURATIONS.items()],
     )
     submission_token = forms.CharField(required=False, widget=forms.HiddenInput)
 
@@ -86,6 +102,8 @@ class PollForm(forms.ModelForm):
                 poll = super().save(commit=False)
                 poll.author = author
                 poll.submission_token = token
+                length = DURATIONS[self.cleaned_data.get("duration") or ""][1]
+                poll.closes_at = timezone.now() + length if length else None
                 poll.save()
                 Option.objects.bulk_create(
                     [Option(poll=poll, text=text, order=index) for index, text in enumerate(self.cleaned_options)]

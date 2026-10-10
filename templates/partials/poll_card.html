@@ -19,5 +19,10 @@
   <div class="poll-footer">
     <span>{{ poll.total_votes }} oy</span>
     {% if poll.user_voted %}<span class="badge">✓ Oy verdin</span>{% endif %}
+    {% if poll.is_closed %}
+      <span class="badge badge-closed">🏁 Karar verildi</span>
+    {% elif poll.closes_at %}
+      <span class="deadline-chip">⏳ {{ poll.closes_at|timeuntil }} kaldı</span>
+    {% endif %}
   </div>
 </article>

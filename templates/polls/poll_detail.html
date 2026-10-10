@@ -12,19 +12,35 @@
     <h1 class="poll-question">{{ poll.question }}</h1>
     {% if poll.description %}<p class="poll-description">{{ poll.description|linebreaksbr }}</p>{% endif %}
 
-    <form method="post" action="{% url 'vote' poll.pk %}" class="vote-form">
-      {% csrf_token %}
-      <div class="vote-options">
-        {% for option in poll.option_results %}
-          <label class="vote-pill option-color-{{ option.color }}">
-            <input type="radio" name="option" value="{{ option.pk }}"{% if option.pk == user_option_id %} checked{% endif %} required>
-            <span class="vote-pill-text">{{ option.text }}</span>
-            <span class="vote-pill-check" aria-hidden="true">✓</span>
-          </label>
-        {% endfor %}
+    {% if poll.is_closed %}
+      <div class="closed-banner" role="status">
+        <strong>🏁 Karar verildi</strong>
+        {% if poll.total_votes == 0 %}
+          <span>Süre doldu, kimse oy vermedi.</span>
+        {% elif poll.winners|length == 1 %}
+          <span>Kazanan: <b>{{ poll.winners.0.text }}</b> ({{ poll.winners.0.vote_count }} oy)</span>
+        {% else %}
+          <span>Berabere: {% for option in poll.winners %}<b>{{ option.text }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+        {% endif %}
       </div>
-      <button type="submit" class="btn btn-primary">{% if user_option_id %}Oyumu güncelle{% else %}Oyumu ver{% endif %}</button>
-    </form>
+    {% else %}
+      {% if poll.closes_at %}
+        <p class="deadline">⏳ Oylamanın bitmesine <b>{{ poll.closes_at|timeuntil }}</b> var.</p>
+      {% endif %}
+      <form method="post" action="{% url 'vote' poll.pk %}" class="vote-form">
+        {% csrf_token %}
+        <div class="vote-options">
+          {% for option in poll.option_results %}
+            <label class="vote-pill option-color-{{ option.color }}">
+              <input type="radio" name="option" value="{{ option.pk }}"{% if option.pk == user_option_id %} checked{% endif %} required>
+              <span class="vote-pill-text">{{ option.text }}</span>
+              <span class="vote-pill-check" aria-hidden="true">✓</span>
+            </label>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">{% if user_option_id %}Oyumu güncelle{% else %}Oyumu ver{% endif %}</button>
+      </form>
+    {% endif %}
 
     <section class="results" aria-labelledby="results-title">
       <h2 id="results-title" class="results-title">Sonuçlar · {{ poll.total_votes }} oy</h2>

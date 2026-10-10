@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.validators import MaxLengthValidator
 from django.db import models
+from django.utils import timezone
 
 
 class Poll(models.Model):
@@ -15,11 +16,17 @@ class Poll(models.Model):
     # One-time code issued with the create form; the unique constraint makes a
     # double click / resubmit create the poll only once.
     submission_token = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    # When set, voting ends at this moment and the poll is "decided" ("Karar verildi").
+    closes_at = models.DateTimeField("bitiş zamanı", null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at", "-id"]
         verbose_name = "anket"
         verbose_name_plural = "anketler"
+
+    @property
+    def is_closed(self):
+        return self.closes_at is not None and self.closes_at <= timezone.now()
 
     def __str__(self):
         return self.question

@@ -33,6 +33,15 @@
         {% endif %}
       </div>
 
+      <div class="field">
+        <label for="{{ form.duration.id_for_label }}">{{ form.duration.label }}</label>
+        {{ form.duration }}
+        <div class="field-help">Süre dolunca oy kapanır ve sonuç "Karar verildi" olarak görünür.</div>
+        {% if form.duration.errors %}
+          <ul class="field-errors">{% for error in form.duration.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
       <fieldset class="field options-field">
         <legend>Seçenekler (2–5 tane)</legend>
         <div id="option-list">

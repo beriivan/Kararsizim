@@ -109,9 +109,9 @@ a:hover { text-decoration: none; }
 .form-footer { text-align: center; color: var(--text-muted); }
 .field { margin-bottom: 16px; }
 .field label, .options-field legend { display: block; font-weight: 600; margin-bottom: 6px; }
-.field input, .field textarea, .option-row input { width: 100%; padding: 11px 14px; font: inherit; color: var(--text); background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--radius); transition: border-color .15s ease, box-shadow .15s ease; }
+.field input, .field textarea, .field select, .option-row input { width: 100%; padding: 11px 14px; font: inherit; color: var(--text); background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--radius); transition: border-color .15s ease, box-shadow .15s ease; }
 .field textarea { resize: vertical; }
-.field input:focus, .field textarea:focus, .option-row input:focus { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+.field input:focus, .field textarea:focus, .field select:focus, .option-row input:focus { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
 .field-help { color: var(--text-muted); font-size: 0.85rem; margin-top: 6px; }
 .field-help ul { margin: 4px 0 0; padding-left: 18px; }
 .field-errors { list-style: none; margin: 6px 0 0; padding: 0; color: #C42B4A; font-size: 0.9rem; font-weight: 600; }
@@ -205,6 +205,13 @@ a:hover { text-decoration: none; }
 .voters ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .voters li a { display: inline-block; background: var(--surface-soft); border-radius: 999px; padding: 2px 10px; text-decoration: none; }
 .voters li a:hover { background: var(--primary-soft); }
+
+/* --- Poll deadline / decided -------------------------------------------- */
+
+.closed-banner { display: flex; flex-direction: column; gap: 2px; margin: 16px 0 24px; padding: 14px 16px; background: var(--sun-soft); border-radius: var(--radius); }
+.deadline { margin: 12px 0 0; color: var(--text-muted); }
+.deadline-chip { color: var(--text-muted); }
+.badge-closed { background: var(--sun-soft); }
 
 /* --- Error pages ----------------------------------------------------------- */
 
