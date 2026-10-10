@@ -5,7 +5,8 @@
 
 Demo users have e-mails ending in @demo.invalid and an unusable password, so
 nobody can log in as them and they are easy to find and delete before launch.
-Real users and real votes are never touched.
+Real users and real votes are never touched. Removing a demo user also deletes
+the polls that user authored (and their votes), so avoid keeping real data on them.
 """
 
 import random

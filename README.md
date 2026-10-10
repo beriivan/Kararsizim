@@ -136,6 +136,7 @@ Ekran görüntüsü/deneme için işaretli demo kullanıcılar ve oylar ekleyebi
 .venv/Scripts/python.exe manage.py demo_data remove   # sil (oylarıyla birlikte)
 ```
 
+> `remove`, demo kullanıcıların açtığı anketleri de siler (anket sahibi silinince anketi de gider).
 > Canlıya almadan önce `demo_data remove` çalıştır, yoksa gerçek ziyaretçiler sahte oyları görür.
 
 ---
