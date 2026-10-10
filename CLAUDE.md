@@ -10,25 +10,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Devir notu (son oturum sonu, 2026-10-10)
 
-**Kod durumu:** `master` temiz; testler geçiyor (162). Son push `3a38874`; ondan sonraki commit'ler
-(`demo_data add` örnek anket üretimi, bu not) push edilmemiş olabilir → `git log origin/master..HEAD` bak, kullanıcıdan
-onay alıp push'la.
+**Kod durumu:** `master` temiz, `origin/master` ile aynı; testler geçiyor (162).
 
 **Canlı veri:** Gerçek hesaplar `berivan` ve `beriiiiivan`. Veritabanında kullanıcının isteğiyle **demo veri duruyor**:
-8 demo kullanıcı (`@demo.invalid`), 5 örnek anket, ~47 oy. Paylaşmadan/yayına almadan önce
-`.venv/Scripts/python.exe manage.py demo_data remove` (örnek anketleri de siler). Yeniden eklemek: `demo_data add`.
+8 demo kullanıcı (`@demo.invalid`), 5 örnek anket, ~47 oy. Kullanıcı kalmasını istedi (2026-10-10);
+silmek için `.venv/Scripts/python.exe manage.py demo_data remove` (örnek anketleri de siler). Yeniden eklemek: `demo_data add`.
 Demo kullanıcıların anketlerine gerçek veri koyma (silinince gider).
 
-**Kullanıcıda bekleyen işler (ben yapamam / onay lazım):**
-1. **DB şifresini yenile:** Şu an sohbette görünmüş *eski* şifre kullanılıyor. Supabase → Database Settings →
-   Reset password → harf+rakam (özel karakter yok) → `.env` (`DATABASE_URL`, `DIRECT_DATABASE_URL`) ve Vercel
-   `DATABASE_URL`'e **kopyala-yapıştır** → Redeploy. Şifreyi sohbete yazdırma.
-2. Vercel'de `DEBUG` env var'ını `False` yap (kod zaten Vercel'de zorla kapatıyor).
-3. `manage.py createsuperuser` (admin hesabı yok; parola gerektiği için kullanıcı yapmalı).
-4. İsteğe bağlı: SMTP sağlayıcısı seç → Vercel'e `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
+**Tamamlananlar (2026-10-10):** DB şifresi yenilendi (`.env` + Vercel, canlı doğrulandı), Vercel `DEBUG=False`,
+`createsuperuser` yapıldı (admin: `/admin/`).
+
+**Kullanıcıda bekleyen (hepsi isteğe bağlı):**
+1. SMTP sağlayıcısı seç → Vercel'e `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
    `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` (+ istenirse `REQUIRE_VERIFIED_EMAIL=True`). Girilene kadar şifre
    sıfırlama/doğrulama canlıda gizli (404). Canlıda henüz denenmedi, yalnızca yerelde testle doğrulandı.
-5. İsteğe bağlı: kısa alan adı, gradyan butonların pembe ucunda kontrast iyileştirmesi.
+2. Kısa alan adı, gradyan butonların pembe ucunda kontrast iyileştirmesi.
 
 **Kullanıcının ilgilendiği fikirler (benzer uygulamalara bakınca):** görselli seçenekler, yorum, özel/yalnızca davetli
 anket (Whicha, Wechoos, ASK@ROUND'da var). Kullanıcı bunlar için "evet" demedi; sormadan yapma.
