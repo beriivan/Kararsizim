@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
 
-**Durum:** Faz 0–5 kodu tamam (iskelet, custom User, üyelik, anketler, oylama + sonuçlar, tasarım cilası, deploy hazırlığı). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1) açık, migration'lar uygulandı ve tüm `public` tablolarında RLS açık (policy yok, bilerek). Her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Vercel'e henüz deploy EDİLMEDİ: GitHub push + Vercel projesi + ortam değişkenleri kullanıcıda (adımlar README.md'de).
+**Durum:** Faz 0–5 tamam ve Vercel'de canlı: https://kararsizim-mocha.vercel.app (GitHub `beriivan/Kararsizim` master'a push → otomatik deploy; fonksiyon `fra1`, sayfalar ~0,3–0,9 sn). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1), migration'lar uygulandı, tüm `public` tablolarında RLS açık (policy yok, bilerek); her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Açık işler: canlıda kayıt/anket/oy uçtan uca testi (kullanıcıda), paylaşmadan önce `manage.py demo_data remove`, Supabase DB şifresini değiştir (sohbette göründü).
 
 **Komutlar** (Windows; venv Python 3.14, Django 5.2 LTS; linter/formatter yapılandırılmamış):
 ```bash
