@@ -181,6 +181,27 @@ class VerificationTests(TestCase):
         self.assertEqual(len(mail.outbox), account_views.RESEND_LIMIT)
         self.assertEqual(self.client.post(url).status_code, 429)
 
+    def test_resend_failure_is_reported_and_does_not_use_up_the_allowance(self):
+        self.client.force_login(make_user("ahmet"))
+        url = reverse("resend_verification")
+        with mock.patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+            for _ in range(account_views.RESEND_LIMIT + 2):
+                response = self.client.post(url, follow=True)
+                self.assertContains(response, "gönderemedik")
+                self.assertNotContains(response, "yeniden gönderdik")
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_registration_does_not_claim_a_mail_was_sent_when_it_failed(self):
+        with mock.patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+            response = self.client.post(
+                reverse("register"),
+                {"username": "yeni", "email": "yeni@example.com", "password1": PASSWORD, "password2": PASSWORD},
+                follow=True,
+            )
+        self.assertContains(response, "gönderemedik")
+        self.assertNotContains(response, "doğrulama bağlantısı gönderdik")
+
     def test_resend_requires_login_and_ignores_verified_users(self):
         url = reverse("resend_verification")
         self.assertEqual(self.client.post(url).status_code, 302)  # to login

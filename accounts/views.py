@@ -12,12 +12,13 @@ from django.views.decorators.http import require_POST
 from .emails import read_token, send_verification_email
 from .forms import LoginForm, RegisterForm
 from .models import User
-from .ratelimit import allow, client_ip, rate_limit, too_many_requests
+from .ratelimit import allow, client_ip, rate_limit, refund, too_many_requests
 
 # Abuse limits (attempts per window).
 REGISTER_LIMIT, REGISTER_WINDOW = 10, 60 * 60        # per IP, per hour
 LOGIN_IP_LIMIT, LOGIN_IP_WINDOW = 20, 10 * 60        # per IP, per 10 minutes
 LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW = 8, 10 * 60   # per e-mail, per 10 minutes
+ADMIN_LOGIN_LIMIT, ADMIN_LOGIN_WINDOW = 10, 10 * 60  # per IP, per 10 minutes (/admin/login/)
 
 
 @rate_limit("register", REGISTER_LIMIT, REGISTER_WINDOW)
@@ -32,8 +33,14 @@ def register(request):
             login(request, user)
             messages.success(request, f"Hoş geldin @{user.username}!")
             if settings.EMAIL_ENABLED:
-                send_verification_email(request, user)
-                messages.info(request, "E-postana bir doğrulama bağlantısı gönderdik.")
+                if send_verification_email(request, user):
+                    messages.info(request, "E-postana bir doğrulama bağlantısı gönderdik.")
+                else:
+                    messages.warning(
+                        request,
+                        "Doğrulama e-postasını şu an gönderemedik. Biraz sonra sayfanın üstündeki "
+                        "uyarıdan yeniden gönderebilirsin.",
+                    )
             return redirect("home")
     else:
         form = RegisterForm()
@@ -128,10 +135,14 @@ def resend_verification(request):
     _require_email_enabled()
     if request.user.email_verified:
         return redirect("home")
-    if not allow(f"resend:user:{request.user.pk}", RESEND_LIMIT, RESEND_WINDOW):
+    key = f"resend:user:{request.user.pk}"
+    if not allow(key, RESEND_LIMIT, RESEND_WINDOW):
         return too_many_requests(request, RESEND_WINDOW)
-    send_verification_email(request, request.user)
-    messages.info(request, "Doğrulama bağlantısını yeniden gönderdik, gelen kutunu kontrol et.")
+    if send_verification_email(request, request.user):
+        messages.info(request, "Doğrulama bağlantısını yeniden gönderdik, gelen kutunu kontrol et.")
+    else:
+        refund(key)  # a failed send must not eat the user's hourly allowance
+        messages.error(request, "E-postayı şu an gönderemedik, biraz sonra tekrar dene.")
     next_url = request.POST.get("next", "")
     if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         next_url = reverse("home")

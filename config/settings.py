@@ -156,6 +156,8 @@ if EMAIL_HOST:
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
     EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
     EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+    # Never let a hung SMTP server hold a (serverless) request until it is killed.
+    EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Kararsızım <noreply@localhost>")

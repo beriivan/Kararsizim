@@ -116,3 +116,13 @@ class PollActionRateLimitTests(TestCase):
             self.assertEqual(self.client.post(url, {"option": option.pk}).status_code, 302)
         self.assertEqual(self.client.post(url, {"option": option.pk}).status_code, 429)
         self.assertEqual(Vote.objects.count(), 1)
+
+
+class AdminLoginRateLimitTests(TestCase):
+    def test_admin_login_is_throttled_per_ip(self):
+        url = "/admin/login/"
+        data = {"username": "x@example.com", "password": "yanlis"}
+        for _ in range(account_views.ADMIN_LOGIN_LIMIT):
+            self.assertEqual(self.client.post(url, data).status_code, 200)
+        self.assertEqual(self.client.post(url, data).status_code, 429)
+        self.assertEqual(self.client.get(url).status_code, 200)  # viewing the form is free

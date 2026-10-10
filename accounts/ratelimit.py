@@ -40,6 +40,13 @@ def allow(key, limit, window_seconds):
     return True
 
 
+def refund(key):
+    """Give back the most recent slot of `key` (the action did not really happen)."""
+    last = RateLimitEvent.objects.filter(key=key).order_by("-created_at", "-id").first()
+    if last is not None:
+        last.delete()
+
+
 def too_many_requests(request, retry_after):
     response = render(request, "429.html", {"retry_minutes": max(1, round(retry_after / 60))}, status=429)
     response["Retry-After"] = str(retry_after)
