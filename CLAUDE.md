@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
 
-**Durum:** Faz 0–5 + Faz 6+'dan hız sınırlama, bitiş süresi, paylaşım/OG, şifre sıfırlama + e-posta doğrulama TAMAM ve canlı: https://kararsizim-mocha.vercel.app (repo `beriivan/Kararsizim` master → Vercel otomatik deploy, fonksiyon `fra1`). Supabase `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1), tüm tablolarda RLS açık (policy yok, bilerek). Açık işler ve dikkat edilecekler için aşağıdaki **Devir notu**'na bak.
+**Durum:** Faz 0–5 + Faz 6+'dan hız sınırlama, bitiş süresi, paylaşım/OG, şifre sıfırlama + e-posta doğrulama TAMAM ve canlı: https://kararsizim-mocha.vercel.app (repo `beriivan/Kararsizim` master → Vercel otomatik deploy, fonksiyon `fra1`). Supabase `kararsizim` (eu-central-1; proje kimliği için Supabase MCP `list_projects`), tüm tablolarda RLS açık (policy yok, bilerek). Açık işler ve dikkat edilecekler için aşağıdaki **Devir notu**'na bak.
 
 ## Devir notu (son oturum sonu, 2026-10-10)
 
 **Kod durumu:** `master` temiz, `origin/master` ile aynı; testler geçiyor (162).
 
-**Canlı veri:** Gerçek hesaplar `berivan` ve `beriiiiivan`. Veritabanında kullanıcının isteğiyle **demo veri duruyor**:
+**Canlı veri:** Gerçek kullanıcı hesapları var (adları burada tutulmaz). Veritabanında kullanıcının isteğiyle **demo veri duruyor**:
 8 demo kullanıcı (`@demo.invalid`), 5 örnek anket, ~47 oy. Kullanıcı kalmasını istedi (2026-10-10);
 silmek için `.venv/Scripts/python.exe manage.py demo_data remove` (örnek anketleri de siler). Yeniden eklemek: `demo_data add`.
 Demo kullanıcıların anketlerine gerçek veri koyma (silinince gider).
