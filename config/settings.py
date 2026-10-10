@@ -29,6 +29,10 @@ def env_list(name, default=""):
 # --- Core -------------------------------------------------------------------
 
 DEBUG = env_bool("DEBUG", False)
+if os.environ.get("VERCEL"):
+    # Never run with debug on a Vercel deployment, whatever the env var says:
+    # DEBUG=True would show Django's debug pages (settings, code, URLs) to visitors.
+    DEBUG = False
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 if not SECRET_KEY:

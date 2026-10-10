@@ -66,3 +66,37 @@ class LayoutTests(TestCase):
     def test_login_notice_shows_when_redirected_without_a_message(self):
         response = self.client.get(reverse("poll_create"), follow=True)
         self.assertContains(response, "Devam etmek için önce giriş yapmalısın.")
+
+
+class DebugIsNeverOnInProductionTests(TestCase):
+    """DEBUG must stay off on Vercel even if the DEBUG env var is mistakenly True."""
+
+    def settings_debug(self, **env):
+        import os
+        import subprocess
+        import sys
+
+        from django.conf import settings
+
+        code = (
+            "import os, django; os.environ['DJANGO_SETTINGS_MODULE']='config.settings'; "
+            "django.setup(); from django.conf import settings as s; "
+            "print(s.DEBUG, s.SESSION_COOKIE_SECURE, s.CSRF_COOKIE_SECURE)"
+        )
+        full_env = {**os.environ, "SECRET_KEY": "x" * 50, **env}
+        for key in ("VERCEL", "DATABASE_URL", "DIRECT_DATABASE_URL", "USE_DIRECT_DB"):
+            if key not in env:
+                full_env.pop(key, None)
+        result = subprocess.run(
+            [sys.executable, "-c", code], cwd=settings.BASE_DIR, env=full_env, capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.split()
+
+    def test_debug_true_is_ignored_on_vercel(self):
+        debug, session_secure, csrf_secure = self.settings_debug(DEBUG="True", VERCEL="1")
+        self.assertEqual((debug, session_secure, csrf_secure), ("False", "True", "True"))
+
+    def test_debug_still_works_locally(self):
+        debug, *_ = self.settings_debug(DEBUG="True")
+        self.assertEqual(debug, "True")
