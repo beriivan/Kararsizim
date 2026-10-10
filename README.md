@@ -8,6 +8,8 @@ E-posta adresleri hiçbir sayfada gösterilmez, yalnızca kullanıcı adı gör�
 
 Ayrıntılı plan, veri modeli ve tasarım kararları için [CLAUDE.md](CLAUDE.md) dosyasına bak.
 
+Bu proje, Atıl Samancıoğlu'nun eğitimiyle öğrendiklerim doğrultusunda, Claude Code (yapay zekâ) desteğiyle geliştirildi.
+
 ---
 
 ## Yerelde çalıştırma
