@@ -125,6 +125,18 @@ Sonra yeni tablolarda RLS'i aç (yukarıya bak), ardından kodu push'la.
 - **Veritabanına bağlanamıyor:** `DATABASE_URL`'in transaction pooler (`:6543`) olduğunu ve şifrede özel karakter (`@ # / :`) bulunmadığını kontrol et.
 - **Supabase projesi duraklatılmış:** Ücretsiz planda 7 gün kullanılmazsa proje durur; panelden yeniden başlat.
 
+### Demo verisi
+
+Ekran görüntüsü/deneme için işaretli demo kullanıcılar ve oylar ekleyebilirsin
+(e-postaları `@demo.invalid` ile biter, parolaları yoktur, kimse giriş yapamaz):
+
+```bash
+.venv/Scripts/python.exe manage.py demo_data add      # ekle
+.venv/Scripts/python.exe manage.py demo_data remove   # sil (oylarıyla birlikte)
+```
+
+> Canlıya almadan önce `demo_data remove` çalıştır, yoksa gerçek ziyaretçiler sahte oyları görür.
+
 ---
 
 ## Yapı
