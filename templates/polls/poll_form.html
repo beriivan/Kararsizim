@@ -8,6 +8,7 @@
     <h1>Kararını topluluğa sor</h1>
     <form method="post" novalidate id="poll-form">
       {% csrf_token %}
+      {{ form.submission_token }}
 
       {% if form.non_field_errors %}
         <div class="form-errors">

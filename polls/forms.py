@@ -1,5 +1,7 @@
+import uuid
+
 from django import forms
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from .models import Option, Poll
 
@@ -21,6 +23,7 @@ class PollForm(forms.ModelForm):
         max_length=500,
         widget=forms.Textarea(attrs={"rows": 3}),
     )
+    submission_token = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = Poll
@@ -37,6 +40,13 @@ class PollForm(forms.ModelForm):
         """Values to re-render in the option inputs (always at least MAX_OPTIONS rows)."""
         submitted = self.data.getlist("option") if self.is_bound else []
         return submitted + [""] * (MAX_OPTIONS - len(submitted))
+
+    def clean_submission_token(self):
+        # A missing or malformed code is not the user's fault: just ignore it.
+        try:
+            return uuid.UUID(self.cleaned_data.get("submission_token", ""))
+        except (ValueError, AttributeError, TypeError):
+            return None
 
     def clean(self):
         cleaned = super().clean()
@@ -58,12 +68,32 @@ class PollForm(forms.ModelForm):
         return cleaned
 
     def save(self, author):
-        """Create the poll and its options together or not at all."""
-        with transaction.atomic():
-            poll = super().save(commit=False)
-            poll.author = author
-            poll.save()
-            Option.objects.bulk_create(
-                [Option(poll=poll, text=text, order=index) for index, text in enumerate(self.cleaned_options)]
-            )
-        return poll
+        """Create the poll and its options together or not at all.
+
+        Returns `(poll, created)`. Submitting the same form twice (double click,
+        reload, back button) returns the poll created the first time.
+        """
+        token = self.cleaned_data.get("submission_token")
+        if token:
+            existing = Poll.objects.filter(submission_token=token).first()
+            if existing and existing.author_id == author.pk:
+                return existing, False
+            if existing:  # someone else's code: ignore it
+                token = None
+
+        try:
+            with transaction.atomic():
+                poll = super().save(commit=False)
+                poll.author = author
+                poll.submission_token = token
+                poll.save()
+                Option.objects.bulk_create(
+                    [Option(poll=poll, text=text, order=index) for index, text in enumerate(self.cleaned_options)]
+                )
+        except IntegrityError:
+            # Two identical requests raced; the unique token let only one win.
+            existing = Poll.objects.filter(submission_token=token, author=author).first() if token else None
+            if existing is None:
+                raise
+            return existing, False
+        return poll, True

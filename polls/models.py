@@ -12,6 +12,9 @@ class Poll(models.Model):
         "açıklama", blank=True, validators=[MaxLengthValidator(500, "Açıklama en fazla 500 karakter olabilir.")]
     )
     created_at = models.DateTimeField("oluşturulma tarihi", auto_now_add=True)
+    # One-time code issued with the create form; the unique constraint makes a
+    # double click / resubmit create the poll only once.
+    submission_token = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["-created_at", "-id"]

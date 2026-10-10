@@ -1,3 +1,4 @@
+import uuid
 from collections import defaultdict
 
 from django.contrib import messages
@@ -78,11 +79,14 @@ def poll_create(request):
     if request.method == "POST":
         form = PollForm(request.POST)
         if form.is_valid():
-            poll = form.save(author=request.user)
-            messages.success(request, "Anketin yayında!")
+            poll, created = form.save(author=request.user)
+            if created:
+                messages.success(request, "Anketin yayında!")
+            else:
+                messages.info(request, "Bu anket zaten yayında, tekrar oluşturmadık.")
             return redirect("poll_detail", pk=poll.pk)
     else:
-        form = PollForm()
+        form = PollForm(initial={"submission_token": uuid.uuid4()})
     return render(request, "polls/poll_form.html", {"form": form})
 
 
