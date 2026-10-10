@@ -6,7 +6,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
 
-**Durum:** Faz 0–5 tamam ve Vercel'de canlı: https://kararsizim-mocha.vercel.app (GitHub `beriivan/Kararsizim` master'a push → otomatik deploy; fonksiyon `fra1`, sayfalar ~0,3–0,9 sn). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1), migration'lar uygulandı, tüm `public` tablolarında RLS açık (policy yok, bilerek); her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Açık işler: canlıda kayıt/anket/oy uçtan uca testi (kullanıcıda), paylaşmadan önce `manage.py demo_data remove`, Supabase DB şifresini değiştir (sohbette göründü).
+**Durum:** Faz 0–5 + Faz 6+'dan hız sınırlama, bitiş süresi, paylaşım/OG, şifre sıfırlama + e-posta doğrulama TAMAM ve canlı: https://kararsizim-mocha.vercel.app (repo `beriivan/Kararsizim` master → Vercel otomatik deploy, fonksiyon `fra1`). Supabase `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1), tüm tablolarda RLS açık (policy yok, bilerek). Açık işler ve dikkat edilecekler için aşağıdaki **Devir notu**'na bak.
+
+## Devir notu (son oturum sonu, 2026-10-10)
+
+**Kod durumu:** `master` temiz; testler geçiyor (162). Son push `3a38874`; ondan sonraki commit'ler
+(`demo_data add` örnek anket üretimi, bu not) push edilmemiş olabilir → `git log origin/master..HEAD` bak, kullanıcıdan
+onay alıp push'la.
+
+**Canlı veri:** Gerçek hesaplar `berivan` ve `beriiiiivan`. Veritabanında kullanıcının isteğiyle **demo veri duruyor**:
+8 demo kullanıcı (`@demo.invalid`), 5 örnek anket, ~47 oy. Paylaşmadan/yayına almadan önce
+`.venv/Scripts/python.exe manage.py demo_data remove` (örnek anketleri de siler). Yeniden eklemek: `demo_data add`.
+Demo kullanıcıların anketlerine gerçek veri koyma (silinince gider).
+
+**Kullanıcıda bekleyen işler (ben yapamam / onay lazım):**
+1. **DB şifresini yenile:** Şu an sohbette görünmüş *eski* şifre kullanılıyor. Supabase → Database Settings →
+   Reset password → harf+rakam (özel karakter yok) → `.env` (`DATABASE_URL`, `DIRECT_DATABASE_URL`) ve Vercel
+   `DATABASE_URL`'e **kopyala-yapıştır** → Redeploy. Şifreyi sohbete yazdırma.
+2. Vercel'de `DEBUG` env var'ını `False` yap (kod zaten Vercel'de zorla kapatıyor).
+3. `manage.py createsuperuser` (admin hesabı yok; parola gerektiği için kullanıcı yapmalı).
+4. İsteğe bağlı: SMTP sağlayıcısı seç → Vercel'e `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
+   `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` (+ istenirse `REQUIRE_VERIFIED_EMAIL=True`). Girilene kadar şifre
+   sıfırlama/doğrulama canlıda gizli (404). Canlıda henüz denenmedi, yalnızca yerelde testle doğrulandı.
+5. İsteğe bağlı: kısa alan adı, gradyan butonların pembe ucunda kontrast iyileştirmesi.
+
+**Kullanıcının ilgilendiği fikirler (benzer uygulamalara bakınca):** görselli seçenekler, yorum, özel/yalnızca davetli
+anket (Whicha, Wechoos, ASK@ROUND'da var). Kullanıcı bunlar için "evet" demedi; sormadan yapma.
+
+**Yaşanan tuzaklar (tekrar etme):**
+- Vercel'e `DATABASE_URL` yapıştırırken `.env`'den birden fazla satır kopyalanınca değer bozuldu
+  (`...postgresUSE_DIRECT_DB=1`). Doğrusu: **tek satır**, `postgresql://postgres.<ref>:<ŞİFRE>@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`.
+  Vercel'de `USE_DIRECT_DB` ve `DIRECT_DATABASE_URL` olmayacak. Env değişince **Redeploy** şart.
+- Yerel `.env` `USE_DIRECT_DB=1` ile Session pooler (5432) kullanır; yerel `runserver` **canlı veritabanına** yazar.
+  `manage.py test` ise her zaman SQLite.
+- Vercel MCP bu hesapta deployment/log/domain okuyamıyor (403). Canlı hata için kullanıcıdan Vercel → Logs'tan
+  hata metnini iste. Siteyi `curl` ile doğrula; `X-Vercel-Id` başlığı `fra1::fra1` olmalı (aksi hâlde yavaşlar).
+- `kararsizim.vercel.app` başkasının projesi, bizim değil; bizim adres `kararsizim-mocha.vercel.app`.
+- `DEBUG=True` bir kez canlıya sızmıştı; kod artık `VERCEL` varken zorla kapatıyor (test var).
+- Yeni NOT NULL sütunlarda `db_default` kullan; migration'ı **push'tan önce** Supabase'e uygula, yeni tabloda RLS aç
+  (Supabase MCP `apply_migration`, `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`).
+- Bash tool'unda uzun heredoc'lar (özellikle tırnak/`EOF` içerenler) ayrıştırma hatası verdi; dosyaları Write
+  tool'uyla yaz, gerekirse küçük bir yama betiği çalıştırıp sil.
+
+**Çalışma şekli:** özellik başına commit; push'u yalnızca kullanıcı onaylayınca yap; veriye yazan canlı denemeleri
+kullanıcı yapar; gizli bilgiyi (şifre/anahtar) ekrana yazma, `.env`'e yaz.
+
+---
 
 **Komutlar** (Windows; venv Python 3.14, Django 5.2 LTS; linter/formatter yapılandırılmamış):
 ```bash
