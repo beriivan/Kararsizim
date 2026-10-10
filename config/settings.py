@@ -34,8 +34,28 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "")
 if not SECRET_KEY:
     raise ImproperlyConfigured("SECRET_KEY environment variable is required (see .env.example).")
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+# Vercel exposes the deployment's own host names as system env vars
+# (without scheme). Trust exactly those, not all of *.vercel.app.
+VERCEL_HOSTS = [
+    host
+    for host in (
+        os.environ.get("VERCEL_URL", ""),
+        os.environ.get("VERCEL_BRANCH_URL", ""),
+        os.environ.get("VERCEL_PROJECT_PRODUCTION_URL", ""),
+    )
+    if host
+]
+
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1") + VERCEL_HOSTS
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS") + [f"https://{host}" for host in VERCEL_HOSTS]
+
+if not DEBUG:
+    # Vercel terminates TLS and forwards the original scheme in this header.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS is sticky in browsers, so it stays off unless explicitly enabled.
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0"))
 
 # --- Applications -----------------------------------------------------------
 
@@ -149,5 +169,10 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+
+# Let WhiteNoise find static files (project `static/` + admin) directly through
+# the staticfiles finders, so the app also works when `collectstatic` was not run
+# (e.g. a serverless build that doesn't execute it).
+WHITENOISE_USE_FINDERS = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
