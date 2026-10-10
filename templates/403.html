@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Erişim yok · Kararsızım{% endblock %}
+
+{% block content %}
+  <section class="card error-page">
+    <p class="error-code">403</p>
+    <h1>Buna iznin yok 🔒</h1>
+    <p>Bu işlemi yapmaya yetkin yok. Yalnızca kendi anketlerini silebilirsin.</p>
+    <a class="btn btn-primary" href="{% url 'home' %}">Ana sayfaya dön</a>
+  </section>
+{% endblock %}

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma Notları (koddan doğrulanmış; plan bölümleri aşağıda)
 
-**Durum:** Faz 0–3 tamam (iskelet, custom User, üyelik, anketler, oylama + sonuçlar). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1) açık, migration'lar uygulandı ve tüm `public` tablolarında RLS açık (policy yok, bilerek). Her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Faz 4 (tasarım cilası) henüz başlamadı.
+**Durum:** Faz 0–4 tamam (iskelet, custom User, üyelik, anketler, oylama + sonuçlar, tasarım cilası). Supabase projesi `kararsizim` (ref `oyifgrcakokndgaxbmxd`, eu-central-1) açık, migration'lar uygulandı ve tüm `public` tablolarında RLS açık (policy yok, bilerek). Her yeni migration'dan sonra yeni tablolarda RLS açılmalı. Faz 5 (Vercel deploy) henüz başlamadı.
 
 **Komutlar** (Windows; venv Python 3.14, Django 5.2 LTS; linter/formatter yapılandırılmamış):
 ```bash
@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Mimari notlar:**
 - `accounts.User`: `USERNAME_FIELD="email"`. E-posta `UserManager.normalize_email` ve `save()` ile küçük harfe çevrilir; kullanıcı adı benzersizliği büyük/küçük harf duyarsızdır (`UniqueConstraint(Lower("username"))` — `unique=True` ile birlikte). Yeni kayıt yolu eklerken e-posta normalizasyonunu bypass etme (`objects.create_user` ya da `save()` kullan; `bulk_create` normalize etmez).
 - `polls`: `Poll`, `Option`, `Vote` (`UniqueConstraint(user, poll)`; oy `update_or_create` ile verilir/değiştirilir). `vote` view'ı POST-only; ziyaretçiyi `redirect_to_login(detay_url)` ile girişe yollar, seçenek `poll.options` içinden aranır (başka anketin seçeneği reddedilir). Sonuçlar (`vote_count`, `percent`, `is_winner`, `voters`) `views._poll_queryset()` + `_decorate_poll()` ile hesaplanır; `Count` ile annotate edilen sorgularda Django `Meta.ordering`'i yok saydığı için sıralama her yerde açıkça verilir. Ana akışta `?sirala=populer` = en çok oy alan. Anket formu (`PollForm`) seçenekleri tekrarlayan `option` girdilerinden `self.data.getlist("option")` ile okur; 2–5 / tekrar / 80 karakter kuralları `clean()` içinde, böylece JS kapalıyken de geçerli. Kayıt `transaction.atomic()` içinde. Ana akış `poll_list` URL adı `home` (LOGIN_REDIRECT_URL vb. buna bağlı). Sayfalama `?sayfa=`.
+- Arayüz: tek `static/css/main.css` (tasarım değişkenleri `:root`'ta; `--text-muted` AA kontrastı için plandaki #7A7491'den biraz koyu). Sonuç barı animasyonu saf CSS (`@keyframes bar-grow`, genişlik inline style'dan). `static/js/main.js` Django mesajlarını alt toast'a çevirip kaybolur; JS kapalıysa şerit olarak kalır. 404/403 `base.html`'i extend eder, `500.html` bilerek bağımsızdır (istek context'i yok).
 - `manage.py test` her zaman SQLite kullanır (settings'te `sys.argv` kontrolü); `.env`'de Supabase olsa bile test gerçek veritabanına dokunmaz.
 - Supabase `public` şemasındaki tablolarda RLS kapalıysa anon key ile REST üzerinden okunabilir; yeni tablolar migrate edildikten sonra RLS açılmalı (Django `postgres` rolüyle bağlandığı için etkilenmez).
 
