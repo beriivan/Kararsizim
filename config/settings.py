@@ -103,6 +103,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "config.context_processors.features",
             ],
         },
     },
@@ -141,6 +142,27 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+# --- E-mail -----------------------------------------------------------------
+# Password reset and e-mail verification need a real mail server. They are only
+# switched on when EMAIL_HOST is configured (or in local DEBUG, where mails are
+# printed to the console), so they never promise an e-mail that cannot be sent.
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+    EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Kararsızım <noreply@localhost>")
+
+EMAIL_ENABLED = bool(EMAIL_HOST) or DEBUG
+# When True, unverified users can browse but cannot create polls or vote.
+REQUIRE_VERIFIED_EMAIL = env_bool("REQUIRE_VERIFIED_EMAIL", False) and EMAIL_ENABLED
 
 # --- Sessions ---------------------------------------------------------------
 # Database-backed sessions (Django default); serverless has no shared disk/memory.

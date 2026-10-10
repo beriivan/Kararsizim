@@ -1,0 +1,7 @@
+Merhaba @{{ user.username }},
+
+Kararsızım hesabının e-posta adresini doğrulamak için aşağıdaki bağlantıya tıkla:
+
+{{ link }}
+
+Bu bağlantı 3 gün geçerlidir. Bu hesabı sen açmadıysan bu e-postayı yok sayabilirsin.

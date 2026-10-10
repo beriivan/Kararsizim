@@ -1,6 +1,7 @@
 import uuid
 from collections import defaultdict
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -85,6 +86,9 @@ def poll_list(request):
 @login_required
 @rate_limit("poll_create", POLL_CREATE_LIMIT, POLL_CREATE_WINDOW, by="user")
 def poll_create(request):
+    if settings.REQUIRE_VERIFIED_EMAIL and not request.user.email_verified:
+        messages.info(request, "Anket açmak için önce e-postanı doğrulaman gerekiyor.")
+        return redirect("home")
     if request.method == "POST":
         form = PollForm(request.POST)
         if form.is_valid():
@@ -140,6 +144,10 @@ def vote(request, pk):
     if not request.user.is_authenticated:
         messages.info(request, "Oy vermek için önce giriş yapmalısın.")
         return redirect_to_login(detail_url)
+
+    if settings.REQUIRE_VERIFIED_EMAIL and not request.user.email_verified:
+        messages.info(request, "Oy vermek için önce e-postanı doğrulaman gerekiyor.")
+        return redirect(detail_url)
 
     option = _option_of_poll(poll, request.POST.get("option"))
     if option is None:

@@ -118,6 +118,25 @@ Sonra yeni tablolarda RLS'i aç (yukarıya bak), ardından kodu push'la.
 4. Çıkış yapıp ziyaretçi olarak sonuçları gör.
 5. Hiçbir sayfada e-posta adresinin görünmediğini kontrol et.
 
+### E-posta (şifre sıfırlama ve doğrulama)
+
+Şifre sıfırlama ve e-posta doğrulama için bir SMTP sunucusu gerekir (ör. Resend, Brevo, Mailgun, Gmail uygulama şifresi).
+`EMAIL_HOST` tanımlı değilken bu özellikler canlıda **gizli** kalır (kimseye gönderilemeyecek bir e-posta vaat edilmez).
+Yerelde (`DEBUG=True`) e-postalar terminale yazdırılır, böylece akışı SMTP'siz deneyebilirsin.
+
+Vercel'de eklenecek değişkenler:
+
+| Değişken | Örnek |
+|---|---|
+| `EMAIL_HOST` | `smtp.resend.com` |
+| `EMAIL_PORT` | `587` |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | sağlayıcının verdiği bilgiler |
+| `DEFAULT_FROM_EMAIL` | `Kararsızım <noreply@senin-alan-adin.com>` |
+| `REQUIRE_VERIFIED_EMAIL` | `True` ise doğrulanmamış üyeler anket açamaz / oy veremez (varsayılan `False`) |
+
+> Çoğu sağlayıcı göndereceğin alan adını doğrulamanı ister (DNS kaydı). Doğrulanmamış bir adresten
+> gönderim spam'e düşer ya da reddedilir.
+
 ### Sorun giderme
 
 - **`DisallowedHost` / 400:** Alan adı `ALLOWED_HOSTS`'ta yok. Özel alan adı kullanıyorsan ekle.
@@ -140,6 +159,14 @@ Ekran görüntüsü/deneme için işaretli demo kullanıcılar ve oylar ekleyebi
 > Canlıya almadan önce `demo_data remove` çalıştır, yoksa gerçek ziyaretçiler sahte oyları görür.
 
 ---
+
+## Özellikler (kısaca)
+
+- Kayıt / giriş (e-posta ile) / çıkış, şifre sıfırlama ve e-posta doğrulama (SMTP varsa)
+- 2–5 seçenekli anket, isteğe bağlı bitiş süresi (süre dolunca "Karar verildi")
+- Tek oy (değiştirilebilir), sonuç barları, oy verenlerin kullanıcı adları, "En çok oy alan" sıralaması
+- Anket linkini kopyala/paylaş, Open Graph önizlemesi
+- Hız sınırlama: giriş, kayıt, şifre sıfırlama, anket açma ve oy (veritabanı tabanlı, `accounts/ratelimit.py`)
 
 ## Yapı
 

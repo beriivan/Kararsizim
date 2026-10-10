@@ -12,6 +12,7 @@
       {% include "partials/form_fields.html" %}
       <button type="submit" class="btn btn-primary btn-block">Giriş yap</button>
     </form>
+    {% if EMAIL_ENABLED %}<p class="form-footer"><a href="{% url 'password_reset' %}">Şifreni mi unuttun?</a></p>{% endif %}
     <p class="form-footer">Hesabın yok mu? <a href="{% url 'register' %}">Kayıt ol</a></p>
   </section>
 {% endblock %}

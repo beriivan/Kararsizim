@@ -1,8 +1,15 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView, PasswordResetConfirmView, PasswordResetView
+from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse, reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
+from .emails import read_token, send_verification_email
 from .forms import LoginForm, RegisterForm
 from .models import User
 from .ratelimit import allow, client_ip, rate_limit, too_many_requests
@@ -24,6 +31,9 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, f"Hoş geldin @{user.username}!")
+            if settings.EMAIL_ENABLED:
+                send_verification_email(request, user)
+                messages.info(request, "E-postana bir doğrulama bağlantısı gönderdik.")
             return redirect("home")
     else:
         form = RegisterForm()
@@ -43,3 +53,86 @@ class CustomLoginView(LoginView):
         if not (ip_ok and email_ok):
             return too_many_requests(request, LOGIN_EMAIL_WINDOW)
         return super().post(request, *args, **kwargs)
+
+
+# --- Password reset (Django's token machinery, Turkish pages) -----------------
+
+PASSWORD_RESET_LIMIT, PASSWORD_RESET_WINDOW = 5, 60 * 60  # per IP, per hour
+RESEND_LIMIT, RESEND_WINDOW = 3, 60 * 60                  # per user, per hour
+
+
+def _require_email_enabled():
+    if not settings.EMAIL_ENABLED:
+        raise Http404
+
+
+class PasswordReset(PasswordResetView):
+    template_name = "accounts/password_reset_form.html"
+    email_template_name = "accounts/password_reset_email.txt"
+    subject_template_name = "accounts/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+    def dispatch(self, request, *args, **kwargs):
+        _require_email_enabled()
+        return super().dispatch(request, *args, **kwargs)
+
+
+class PasswordResetConfirm(PasswordResetConfirmView):
+    template_name = "accounts/password_reset_confirm.html"
+    success_url = reverse_lazy("password_reset_complete")
+
+    def dispatch(self, request, *args, **kwargs):
+        _require_email_enabled()
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Following the e-mailed link proves the user controls the address.
+        user = form.user
+        if not user.email_verified:
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
+        return response
+
+
+def password_reset_done(request):
+    _require_email_enabled()
+    return render(request, "accounts/password_reset_done.html")
+
+
+def password_reset_complete(request):
+    _require_email_enabled()
+    return render(request, "accounts/password_reset_complete.html")
+
+
+# --- E-mail verification ---------------------------------------------------------
+
+
+def verify_email(request, token):
+    _require_email_enabled()
+    parsed = read_token(token)
+    user = User.objects.filter(pk=parsed[0]).first() if parsed else None
+    if user is None or user.email != parsed[1]:
+        messages.error(request, "Bu doğrulama bağlantısı geçersiz ya da süresi dolmuş.")
+        return redirect("home")
+    if not user.email_verified:
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
+    messages.success(request, "E-posta adresin doğrulandı, teşekkürler! 💜")
+    return redirect("home")
+
+
+@login_required
+@require_POST
+def resend_verification(request):
+    _require_email_enabled()
+    if request.user.email_verified:
+        return redirect("home")
+    if not allow(f"resend:user:{request.user.pk}", RESEND_LIMIT, RESEND_WINDOW):
+        return too_many_requests(request, RESEND_WINDOW)
+    send_verification_email(request, request.user)
+    messages.info(request, "Doğrulama bağlantısını yeniden gönderdik, gelen kutunu kontrol et.")
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        next_url = reverse("home")
+    return redirect(next_url)

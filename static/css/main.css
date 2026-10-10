@@ -220,6 +220,11 @@ a:hover { text-decoration: none; }
 .share-input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; font-size: 0.9rem; color: var(--text-muted); background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--radius); }
 .share-status { min-height: 1.4em; margin: 6px 0 0; color: var(--text-muted); font-size: 0.9rem; }
 
+/* --- E-mail verification banner -------------------------------------------- */
+
+.verify-banner { max-width: 680px; margin: 12px auto 0; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; background: var(--sun-soft); border-radius: var(--radius); }
+.verify-banner form { margin: 0; }
+
 /* --- Error pages ----------------------------------------------------------- */
 
 .error-page { text-align: center; padding: 40px 22px; }

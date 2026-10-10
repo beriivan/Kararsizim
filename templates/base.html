@@ -25,6 +25,16 @@
   <a class="skip-link" href="#content">İçeriğe geç</a>
   {% include "partials/navbar.html" %}
   {% include "partials/messages.html" %}
+  {% if EMAIL_ENABLED and user.is_authenticated and not user.email_verified %}
+    <div class="verify-banner" role="region" aria-label="E-posta doğrulama">
+      <span>E-postanı henüz doğrulamadın.{% if REQUIRE_VERIFIED_EMAIL %} Anket açmak ve oy vermek için gerekli.{% endif %}</span>
+      <form method="post" action="{% url 'resend_verification' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn btn-soft">Bağlantıyı tekrar gönder</button>
+      </form>
+    </div>
+  {% endif %}
   <main class="container" id="content">
     {% block content %}{% endblock %}
   </main>
